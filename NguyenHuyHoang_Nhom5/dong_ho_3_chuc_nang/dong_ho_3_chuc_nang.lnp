@@ -1,0 +1,8 @@
+"main.obj",
+".\Delay.obj",
+".\LCD4.obj",
+".\Rtc_Ds1307.obj",
+".\Soft_I2C.obj" 
+TO "dong_ho_3_chuc_nang" 
+
+ru 

@@ -1,0 +1,236 @@
+C51 COMPILER V9.52.0.0   MAIN                                                              10/31/2021 21:24:40 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c OMF2 BROWSE DEBUG TABS(2)
+
+line level    source
+
+   1          #include "main.h"
+   2          #include "port.h"
+   3          #include "..\lib\Lcd4.h"
+   4          #include "..\lib\Rtc_Ds1307.h"
+   5          #include "..\lib\Soft_I2C.h"
+   6          #include "..\lib\Delay.h"
+   7          
+   8          unsigned char * code days[] = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
+   9          
+  10          bit alarm = 0;
+  11          
+  12          void display_real_time(unsigned char second, unsigned char minute, unsigned char hour, unsigned char day, 
+             -unsigned char date, unsigned char month, unsigned char year)
+  13          {
+  14   1        unsigned char old_second;
+  15   1        if(old_second != second) // do IC chay nhanh qua, man se giat, cau lenh nay va cau lenh ngay duoi, dung d
+             -e neu lam mach thuc te se khong bi giat, do co 1 thoi gian cho
+  16   1        {
+  17   2          old_second = second; //
+  18   2          Lcd_Chr(1, 5, hour/10+0x30); //xuat ky tu ra LCD nen phai +48 theo ma ASCII, o day dung con tro, cac so 
+             -sau in ngay sau day
+  19   2          Lcd_Chr_Cp(hour%10+0x30);
+  20   2          Lcd_Chr_Cp(':'); //???
+  21   2          Lcd_Chr_Cp(minute/10+0x30); //tuong tu
+  22   2          Lcd_Chr_Cp(minute%10+0x30);
+  23   2          Lcd_Chr_Cp(':'); //???
+  24   2          Lcd_Chr_Cp(second/10+0x30); //tuong tu
+  25   2          Lcd_Chr_Cp(second%10+0x30);
+  26   2          
+  27   2          Lcd_Out(2, 2, days[day - 1]); // do mang tu 0-7, con ngay tu 1 den 8, doi cho con tro, cac so sau in nga
+             -y sau day
+  28   2          Lcd_Chr_Cp(' ');
+  29   2          Lcd_Chr_Cp(date/10+0x30); //xuat ngay trong thang
+  30   2          Lcd_Chr_Cp(date%10+0x30);
+  31   2          Lcd_Out_Cp("/");
+  32   2          Lcd_Chr_Cp(month/10+0x30); //xuat thang
+  33   2          Lcd_Chr_Cp(month%10+0x30);
+  34   2          Lcd_Out_Cp("/20");
+  35   2          Lcd_Chr_Cp(year/10+0x30); //xuat nam
+  36   2          Lcd_Chr_Cp(year%10+0x30);
+  37   2        }
+  38   1      }
+  39          
+  40          void setupalarm_hour(unsigned char *set_up_hour, unsigned char *set_up_minute)
+  41          {
+  42   1        Lcd_Out(1, 2, "Alarm's Hour:");
+  43   1        Lcd_Cmd(0xC1);
+  44   1        Lcd_Chr_Cp(set_up_hour[0]/10+0x30); 
+  45   1        Lcd_Chr_Cp(set_up_hour[0]%10+0x30);
+  46   1        Lcd_Chr_Cp(':');
+  47   1        Lcd_Chr_Cp(set_up_minute[0]/10+0x30); 
+  48   1        Lcd_Chr_Cp(set_up_minute[0]%10+0x30);
+  49   1        Lcd_Out_Cp("          ");
+  50   1        if(BTN_UP == 0)
+  51   1        {
+C51 COMPILER V9.52.0.0   MAIN                                                              10/31/2021 21:24:40 PAGE 2   
+
+  52   2          Delay_ms(500);
+  53   2          set_up_hour[0]++;
+  54   2          if(set_up_hour[0] > 0x18) 
+  55   2          {
+  56   3            set_up_hour[0] = 0; //do chi hen gio trong ngay nen neu nhieu hon 24 gio thi se quay ve 0
+  57   3          }
+  58   2        }
+  59   1        if(BTN_DOWN == 0)
+  60   1        {
+  61   2          Delay_ms(500);
+  62   2          if(set_up_hour[0] > 0x00)
+  63   2          {
+  64   3            set_up_hour[0]--; //do chi hen gio trong ngay nen neu nho hon 0 gio thi se khong giam duoc nua
+  65   3          }
+  66   2        }
+  67   1      }
+  68          
+  69          void setupalarm_minute(unsigned char *set_up_hour, unsigned char *set_up_minute)
+  70          {
+  71   1        //co the clean lai de LCD khong phai viet nhieu
+  72   1        Lcd_Out(1, 2, "Alarm's Min:    ");
+  73   1        Lcd_Cmd(0xC1); // chuyen xuong dong 2
+  74   1        Lcd_Chr_Cp(set_up_hour[0]/10+0x30); 
+  75   1        Lcd_Chr_Cp(set_up_hour[0]%10+0x30);
+  76   1        Lcd_Chr_Cp(':');
+  77   1        Lcd_Chr_Cp(set_up_minute[0]/10+0x30); 
+  78   1        Lcd_Chr_Cp(set_up_minute[0]%10+0x30);
+  79   1        Lcd_Out_Cp("          ");
+  80   1        if(BTN_UP == 0)
+  81   1        {
+  82   2          Delay_ms(500);
+  83   2          set_up_minute[0]++;
+  84   2          if(set_up_minute[0] > 0x3B)
+  85   2          {
+  86   3            set_up_hour[0]++;
+  87   3            set_up_minute[0] = 0;
+  88   3          }
+  89   2        }
+  90   1        if(BTN_DOWN == 0)
+  91   1        {
+  92   2          Delay_ms(500);
+  93   2          if(set_up_hour[0] > 0x00)
+  94   2          {
+  95   3            if(set_up_minute[0] > 0x00)
+  96   3            {
+  97   4              set_up_minute[0]--;
+  98   4            }
+  99   3            else  //neu phut < 0, thi se tru gio di 1, phut bang 0
+ 100   3            {
+ 101   4              set_up_minute[0] = 59;
+ 102   4              set_up_hour[0]--;
+ 103   4            }
+ 104   3          }
+ 105   2          else
+ 106   2          {
+ 107   3            if(set_up_minute[0] > 0x00)
+ 108   3            {
+ 109   4              set_up_minute[0]--; //phut > 0 thi se tru nhu binh thuong
+ 110   4            }
+ 111   3          }
+ 112   2        }
+ 113   1      }
+C51 COMPILER V9.52.0.0   MAIN                                                              10/31/2021 21:24:40 PAGE 3   
+
+ 114          
+ 115          void mode_alarm(unsigned char *remind_times)
+ 116          {
+ 117   1        Lcd_Out(1, 2, "Alarm Clock:    "); //in ra o hang 1 cot 2
+ 118   1        Lcd_Cmd(0xC1); //chuyen con tro ve dau hang thu 2
+ 119   1        if(BTN_UP == 0 || BTN_DOWN == 0)
+ 120   1        {
+ 121   2          Delay_ms(500);
+ 122   2          alarm = !alarm;
+ 123   2        }
+ 124   1        if(alarm == 1)
+ 125   1        {
+ 126   2          Lcd_Out_Cp("ON             ");
+ 127   2          remind_times[0] = 1;
+ 128   2        }
+ 129   1        else
+ 130   1        {
+ 131   2          Lcd_Out_Cp("OFF            ");
+ 132   2        }
+ 133   1      }
+ 134          
+ 135          void alarming()
+ 136          {
+ 137   1        Lcd_Out(1, 2, "Press 'Next' to ");  //in ra o hang 1 cot 2
+ 138   1        Lcd_Cmd(0xC1);
+ 139   1        Lcd_Out_Cp("shut me up!pls!");
+ 140   1        P1_2 = 0;   //bat chuong
+ 141   1      }
+ 142          
+ 143          void main()
+ 144          {
+ 145   1        unsigned char mode = 0, set_up_hour = 21, set_up_minute = 4;
+ 146   1        unsigned char second, minute, hour, day, date, month, year, mode_clock, remind_times = 0;
+ 147   1        
+ 148   1        Soft_I2c_Init();
+ 149   1        Ds1307_Init();
+ 150   1        Lcd_Init();
+ 151   1        while(1) 
+ 152   1        {
+ 153   2          Ds1307_Read_Time(&hour, &minute, &second, &mode_clock);
+ 154   2          Ds1307_Read_Date(&day, &date, &month, &year);  //chi hien thi duoc tu 2000 den 2099
+ 155   2          if(alarm == 1 && remind_times == 1) //dieu kien de xuat hien bao thuc 
+ 156   2          {
+ 157   3            if(set_up_hour == hour && set_up_minute == minute) //neu gio hien tai trung gio hen
+ 158   3            {
+ 159   4              while(BTN_NEXT == 1) //neu khong an nut, chuong se keu het 1 phut
+ 160   4              {
+ 161   5                alarming();
+ 162   5              }
+ 163   4              remind_times = 0; //kiem tra xem da reo hay chua
+ 164   4              P1_2 = 1; //ngat chuong
+ 165   4              mode = 0; //quay ve man hinh chinh
+ 166   4              Lcd_Cmd(0x01);  //xoa man hinh
+ 167   4              Delay_ms(500);
+ 168   4            }
+ 169   3          }
+ 170   2          if(BTN_NEXT == 0)
+ 171   2          {
+ 172   3            Delay_ms(500);
+ 173   3            mode++;
+ 174   3          }
+ 175   2          if(mode == 0)
+C51 COMPILER V9.52.0.0   MAIN                                                              10/31/2021 21:24:40 PAGE 4   
+
+ 176   2          {
+ 177   3            display_real_time(second, minute, hour, day, date, month, year);
+ 178   3          }
+ 179   2          if(mode == 1)
+ 180   2          {
+ 181   3            setupalarm_hour(&set_up_hour, &set_up_minute);
+ 182   3          }
+ 183   2          if(mode == 2)
+ 184   2          {
+ 185   3            setupalarm_minute(&set_up_hour, &set_up_minute);
+ 186   3          }
+ 187   2          if(mode == 3)
+ 188   2          {
+ 189   3            mode_alarm(&remind_times);
+ 190   3          }
+ 191   2          if(mode == 4)
+ 192   2          {
+ 193   3            Lcd_Cmd(0x01); //xoa man hinh
+ 194   3            mode = 0; //quay ve man hinh chinh
+ 195   3            Delay_ms(20);
+ 196   3          }
+ 197   2          
+ 198   2        }
+ 199   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1028    ----
+   CONSTANT SIZE    =    172    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      35
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
