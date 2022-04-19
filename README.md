@@ -1,0 +1,2 @@
+# alarm_8051
+I finished this project a long time ago and at that time I did not pay much attention to the name. I'm Vietnamese, so the file name, comment section, and possibly variable names are set in Vietnamese. Maybe you will have a little trouble finding that file. In this project, I use 8051 microcontroller. Program the 8051 with KeilC uVision 4 using the C programming language. The KeilC project name is set as dong_ho_4_chuc_nang. I use Proteus 8.10 to emulate 8051, after loading the HEX file.
